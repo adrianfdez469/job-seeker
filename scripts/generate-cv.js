@@ -26,7 +26,7 @@
  */
 'use strict';
 
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -104,7 +104,8 @@ function getMarkdownFromDB() {
   try {
     const userId = process.env.USER_ID || 1;
     const sql = `SELECT data->'cv_markdown' AS md FROM users WHERE id = ${userId}`;
-    const raw = execSync(`node "${DB_JS}" "${sql}"`, {
+    // execFileSync passes argv directly, so SQL quotes never pass through a shell.
+    const raw = execFileSync(process.execPath, [DB_JS, sql], {
       encoding: 'utf8',
       timeout: 15000,
       cwd: REPO_ROOT,
@@ -508,9 +509,13 @@ function generatePdfFromHtml(htmlPath, outputPath, session) {
  */
 function updateCvPathInDB(pdfPath) {
   try {
-    const escapedPath = pdfPath.replace(/'/g, "''");
-    const sql = `UPDATE users SET data = jsonb_set(data, '{cv_path}', '"${escapedPath}"') WHERE id = ${process.env.USER_ID || 1}`;
-    execSync(`node "${DB_JS}" "${sql}" --write`, {
+    // JSON.stringify yields a valid JSON string literal (quotes, backslashes),
+    // then single quotes are doubled for the SQL literal.
+    const jsonValue = JSON.stringify(pdfPath).replace(/'/g, "''");
+    const sql = `UPDATE users SET data = jsonb_set(data, '{cv_path}', '${jsonValue}'::jsonb) WHERE id = ${process.env.USER_ID || 1}`;
+    // execFileSync passes argv directly. A shell string here stripped the JSON
+    // double quotes and Postgres rejected the value as invalid JSON.
+    execFileSync(process.execPath, [DB_JS, sql, '--write'], {
       encoding: 'utf8',
       timeout: 15000,
       cwd: REPO_ROOT,
