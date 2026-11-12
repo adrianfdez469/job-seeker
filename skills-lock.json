@@ -1,11 +1,11 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
     "browser-automation": {
       "source": "galiprandi/skills",
       "sourceType": "github",
       "skillPath": "browser-automation/SKILL.md",
-      "computedHash": "688bd9860ac4d9beec43bd0f3ae794447bd7741d157317c31740a2749a4a7030"
+      "computedHash": "536ee61720c5f22ad518727377336bfd05650d648e9e138048f6e46eb6fae464"
     }
   }
 }
